@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Воронка задач и этапов</title>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  body {
+    background: #ffffff;
+    min-height: 100vh;
+    padding: 24px;
+    color: #1a202c;
+  }
+  .header-panel {
+    max-width: 1100px;
+    margin: 0 auto 20px auto;
+    background: #ffffff;
+    padding: 20px 24px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .header-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a202c;
+  }
+  .btn-open-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 26px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    box-shadow: 0 6px 18px rgba(102, 126, 234, 0.45);
+    transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+  }
+  .btn-open-form:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(102, 126, 234, 0.55);
+    filter: brightness(1.05);
+  }
+  .btn-open-form:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+  .btn-open-form .plus {
+    font-size: 20px;
+    line-height: 1;
+    font-weight: 800;
+  }
+  .funnel {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .stage {
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .stage-inbox       { border-left: 6px solid #a0aec0; }
+  .stage-todo        { border-left: 6px solid #f59e0b; }
+  .stage-in-progress { border-left: 6px solid #8b5cf6; }
+  .stage-done        { border-left: 6px solid #10b981; }
+  .stage-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    font-size: 17px;
+    font-weight: 700;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .stage-inbox .stage-header       { background: #f7fafc; color: #4a5568; }
+  .stage-todo .stage-header        { background: #fffaf0; color: #b45309; }
+  .stage-in-progress .stage-header { background: #f5f3ff; color: #6d28d9; }
+  .stage-done .stage-header        { background: #ecfdf5; color: #047857; }
+  .step {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    flex-shrink: 0;
+    color: #fff;
+  }
+  .stage-inbox .step       { background: #a0aec0; }
+  .stage-todo .step        { background: #f59e0b; }
+  .stage-in-progress .step { background: #8b5cf6; }
+  .stage-done .step        { background: #10b981; }
+  .card-count {
+    margin-left: auto;
+    font-size: 13px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 700;
+  }
+  .stage-inbox .card-count       { background: #edf2f7; color: #4a5568; }
+  .stage-todo .card-count        { background: #fde9c4; color: #b45309; }
+  .stage-in-progress .card-count { background: #e9e3ff; color: #6d28d9; }
+  .stage-done .card-count        { background: #d1fae5; color: #047857; }
+  .card-list {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 70px;
+    transition: background 0.2s;
+  }
+  .card-list.drag-over {
+    background: #f8fafc;
+    outline: 2px dashed #cbd5e0;
+    outline-offset: -6px;
+    border-radius: 12px;
+  }
+  .card-list:empty::after {
+    content: "Пока пусто";
+    color: #a0aec0;
+    font-size: 13px;
+    font-style: italic;
+  }
+  .card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px 14px;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid transparent;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    cursor: grab;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.3s;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+  }
+  .card.dragging { opacity: 0.4; }
+  .card-priority-high   { border-left-color: #ef4444; }
+  .card-priority-medium { border-left-color: #3b82f6; }
+  .card-priority-low    { border-left-color: #22c55e; }
+  .card.overdue {
+    background: #fff5f5;
+    border-color: #fc8181;
+    border-left-color: #e53e3e;
+    animation: overduePulse 2s ease-in-out infinite;
+  }
+  @keyframes overduePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.35); }
+    50%      { box-shadow: 0 0 0 6px rgba(229, 62, 62, 0.08); }
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+  .stage-done .card-title {
+    text-decoration: line-through;
+    color: #94a3b8;
+  }
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .tag-high   { background: #fee2e2; color: #b91c1c; }
+  .tag-medium { background: #dbeafe; color: #1d4ed8; }
+  .tag-low    { background: #dcfce7; color: #15803d; }
+  .tag-date   { background: #f1f5f9; color: #475569; }
+  .tag-overdue { background: #fed7d7; color: #c53030; font-weight: 700; }
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 8px;
+    border-top: 1px solid #f1f5f9;
+  }
+  .assignee-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #6366f1;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .assignee-name {
+    font-size: 12px;
+    color: #475569;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .btn-action {
+    background: transparent;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    color: #64748b;
+    transition: all 0.2s;
+  }
+  .btn-action:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+  }
+  .btn-delete:hover {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #fecaca;
+  }
+  .archive {
+    max-width: 1100px;
+    margin: 24px auto 0 auto;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+  }
+  .archive-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    background: #f7fafc;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .archive-header:hover { background: #edf2f7; }
+  .archive-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #2d3748;
+  }
+  .archive-count {
+    font-size: 13px;
+    padding: 3px 10px;
+    background: #e2e8f0;
+    border-radius: 12px;
+    font-weight: 700;
+    color: #4a5568;
+  }
+  .archive-arrow {
+    margin-left: auto;
+    font-size: 14px;
+    color: #718096;
+    transition: transform 0.3s;
+  }
+  .archive.open .archive-arrow { transform: rotate(180deg); }
+  .archive-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+  }
+  .archive.open .archive-body { max-height: 3000px; }
+  .archive-list {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .archive-list:empty::after {
+    content: "Архив пуст";
+    color: #a0aec0;
+    font-size: 13px;
+    font-style: italic;
+  }
+  .archive-item {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 12px 14px;
+    border-left: 4px solid #cbd5e0;
+    font-size: 13px;
+  }
+  .archive-item.status-done    { border-left-color: #10b981; }
+  .archive-item.status-removed { border-left-color: #ef4444; }
+  .archive-item-title {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+  .archive-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+    color: #718096;
+  }
+  .archive-badge {
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 11px;
+  }
+  .archive-badge.done    { background: #d1fae5; color: #047857; }
+  .archive-badge.removed { background: #fed7d7; color: #c53030; }
+  .archive-reason {
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: #fff;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #4a5568;
+    font-style: italic;
+    border: 1px dashed #e2e8f0;
+  }
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalIn 0.25s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #1a202c;
+  }
+  .modal-subtitle {
+    font-size: 13px;
+    color: #718096;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .modal-task-name {
+    font-weight: 600;
+    color: #2d3748;
+  }
+  .modal-field { margin-bottom: 12px; }
+  .modal-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 4px;
+  }
+  .modal-field input,
+  .modal-field select,
+  .modal-field textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    background: #fff;
+  }
+  .modal-field textarea {
+    min-height: 80px;
+    resize: vertical;
+  }
+  .modal-field input:focus,
+  .modal-field select:focus,
+  .modal-field textarea:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 18px;
+  }
+  .btn-modal {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+  .btn-modal-cancel {
+    background: #edf2f7;
+    color: #4a5568;
+  }
+  .btn-modal-cancel:hover { background: #e2e8f0; }
+  .btn-modal-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+  }
+  .btn-modal-primary:hover { filter: brightness(1.08); }
+  .btn-modal-delete {
+    background: #f56565;
+    color: #fff;
+  }
+  .btn-modal-delete:hover { background: #e53e3e; }
+  @media (max-width: 640px) {
+    body { padding: 12px; }
+    .stage-header { font-size: 15px; padding: 12px 14px; }
+    .header-top { flex-direction: column; align-items: stretch; }
+    .btn-open-form { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header-panel">
+  <div class="header-top">
+    <div class="header-title">Воронка задач и этапов</div>
+    <button type="button" class="btn-open-form" id="openFormBtn">
+      <span class="plus">+</span> Добавить задачу
+    </button>
+  </div>
+</div>
+
+<div class="funnel">
+  <section class="stage stage-inbox" data-status="inbox">
+    <div class="stage-header">
+      <span class="step">0</span> Входящие
+      <span class="card-count" data-count="inbox">0</span>
+    </div>
+    <div class="card-list" data-list="inbox"></div>
+  </section>
+  <section class="stage stage-todo" data-status="todo">
+    <div class="stage-header">
+      <span class="step">1</span> Нужно сделать
+      <span class="card-count" data-count="todo">0</span>
+    </div>
+    <div class="card-list" data-list="todo"></div>
+  </section>
+  <section class="stage stage-in-progress" data-status="in-progress">
+    <div class="stage-header">
+      <span class="step">2</span> В работе
+      <span class="card-count" data-count="in-progress">0</span>
+    </div>
+    <div class="card-list" data-list="in-progress"></div>
+  </section>
+  <section class="stage stage-done" data-status="done">
+    <div class="stage-header">
+      <span class="step">3</span> Готово
+      <span class="card-count" data-count="done">0</span>
+    </div>
+    <div class="card-list" data-list="done"></div>
+  </section>
+</div>
+
+<div class="archive" id="archive">
+  <div class="archive-header" id="archiveToggle">
+    <span class="archive-title">📦 Архив задач</span>
+    <span class="archive-count" id="archiveCount">0</span>
+    <span class="archive-arrow">▼</span>
+  </div>
+  <div class="archive-body">
+    <div class="archive-list" id="archiveList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-title">Новая задача</div>
+    <div class="modal-subtitle">Заполни данные — задача попадёт в «Входящие».</div>
+    <form id="taskForm">
+      <div class="modal-field">
+        <label>Название задачи *</label>
+        <input type="text" name="title" placeholder="Например: подготовить отчёт" required>
+      </div>
+      <div class="modal-field">
+        <label>Кто выполняет (менеджер)</label>
+        <input type="text" name="assignee" placeholder="Имя менеджера">
+      </div>
+      <div class="modal-field">
+        <label>Приоритет</label>
+        <select name="priority">
+          <option value="low">Не срочно</option>
+          <option value="medium" selected>Обычный порядок</option>
+          <option value="high">Очень важно</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Срок выполнения</label>
+        <input type="date" name="deadline">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-modal btn-modal-cancel" id="addCancel">Отмена</button>
+        <button type="submit" class="btn-modal btn-modal-primary">Создать задачу</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-title">Удалить задачу?</div>
+    <div class="modal-subtitle">
+      Задача: <span class="modal-task-name" id="modalTaskName"></span><br>
+      Укажи причину — она сохранится в архиве.
+    </div>
+    <div class="modal-field">
+      <label>Причина удаления</label>
+      <textarea id="deleteReason" placeholder="Например: не актуально"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn-modal btn-modal-cancel" id="modalCancel">Отмена</button>
+      <button type="button" class="btn-modal btn-modal-delete" id="modalConfirm">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRIORITIES = {
+  high:   { label: 'Очень важно',     tagClass: 'tag-high',   cardClass: 'card-priority-high' },
+  medium: { label: 'Обычный порядок', tagClass: 'tag-medium', cardClass: 'card-priority-medium' },
+  low:    { label: 'Не срочно',       tagClass: 'tag-low',    cardClass: 'card-priority-low' }
+};
+const ORDER = ['inbox', 'todo', 'in-progress', 'done'];
+const WAIT_LIMIT_MS = 2 * 60 * 60 * 1000;
+
+let tasks   = JSON.parse(localStorage.getItem('tasks')   || '[]');
+let archive = JSON.parse(localStorage.getItem('archive') || '[]');
+
+const form = document.getElementById('taskForm');
+const openFormBtn = document.getElementById('openFormBtn');
+const addCancel = document.getElementById('addCancel');
+const addModal = document.getElementById('addModal');
+
+const lists = {};
+const counters = {};
+['inbox', 'todo', 'in-progress', 'done'].forEach(status => {
+  lists[status] = document.querySelector('[data-list="' + status + '"]');
+  counters[status] = document.querySelector('[data-count="' + status + '"]');
+});
+
+const archiveEl = document.getElementById('archive');
+const archiveToggle = document.getElementById('archiveToggle');
+const archiveList = document.getElementById('archiveList');
+const archiveCount = document.getElementById('archiveCount');
+
+const deleteModal = document.getElementById('deleteModal');
+const modalTaskName = document.getElementById('modalTaskName');
+const deleteReason = document.getElementById('deleteReason');
+const modalCancel = document.getElementById('modalCancel');
+const modalConfirm = document.getElementById('modalConfirm');
+
+let pendingDeleteId = null;
+
+function save() {
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+  localStorage.setItem('archive', JSON.stringify(archive));
+}
+function isOverdue(task) {
+  if (task.status !== 'inbox' && task.status !== 'todo') return false;
+  const created = Number(task.createdAt) || 0;
+  return (Date.now() - created) > WAIT_LIMIT_MS;
+}
+function render() {
+  Object.values(lists).forEach(list => list.innerHTML = '');
+  tasks.forEach(task => {
+    const list = lists[task.status];
+    if (!list) return;
+    const p = PRIORITIES[task.priority] || PRIORITIES.medium;
+    const overdue = isOverdue(task);
+    const card = document.createElement('div');
+    card.className = 'card ' + p.cardClass + (overdue ? ' overdue' : '');
+    card.draggable = true;
+    card.dataset.id = task.id;
+    const deadlineHtml = task.deadline
+      ? '<span class="tag tag-date">📅 до ' + formatDate(task.deadline) + '</span>'
+      : '<span class="tag tag-date">📅 без срока</span>';
+    const overdueHtml = overdue
+      ? '<span class="tag tag-overdue">⏰ Не взято более 2 ч</span>'
+      : '';
+    card.innerHTML =
+      '<div class="card-title">' + escapeHtml(task.title) + '</div>' +
+      '<div class="card-tags">' +
+        '<span class="tag ' + p.tagClass + '">' + p.label + '</span>' +
+        deadlineHtml + overdueHtml +
+      '</div>' +
+      '<div class="card-footer">' +
+        '<div class="assignee-box">' +
+          '<div class="avatar">' + initials(task.assignee) + '</div>' +
+          '<span class="assignee-name">' + escapeHtml(task.assignee || 'Не назначен') + '</span>' +
+        '</div>' +
+        '<div class="card-actions">' +
+          '<button class="btn-action" data-move="prev" title="Переместить назад">←</button>' +
+          '<button class="btn-action" data-move="next" title="Переместить вперёд">→</button>' +
+          '<button class="btn-action btn-delete" data-delete title="Удалить">✕</button>' +
+        '</div>' +
+      '</div>';
+
+    card.querySelector('[data-delete]').addEventListener('click', () => {
+      pendingDeleteId = task.id;
+      modalTaskName.textContent = task.title;
+      deleteReason.value = '';
+      deleteModal.classList.add('open');
+      deleteReason.focus();
+    });
+
+    card.querySelectorAll('[data-move]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = ORDER.indexOf(task.status);
+        const next = btn.dataset.move === 'next' ? idx + 1 : idx - 1;
+        if (next >= 0 && next < ORDER.length) {
+          const prevStatus = task.status;
+          task.status = ORDER[next];
+          if (task.status === 'in-progress' && !task.startedAt) task.startedAt = Date.now();
+          if (task.status === 'done' && prevStatus !== 'done') {
+            moveToArchive(task, 'done', '');
+            tasks = tasks.filter(t => t.id !== task.id);
+          }
+          save(); render(); renderArchive();
+        }
+      });
+    });
+
+    card.addEventListener('dragstart', e => {
+      card.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', task.id);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+
+    list.appendChild(card);
+  });
+  Object.keys(counters).forEach(status => {
+    counters[status].textContent = tasks.filter(t => t.status === status).length;
+  });
+}
+function moveToArchive(task, type, reason) {
+  archive.unshift({
+    id: task.id,
+    title: task.title,
+    assignee: task.assignee,
+    priority: task.priority,
+    deadline: task.deadline,
+    type: type,
+    reason: reason || '',
+    archivedAt: Date.now()
+  });
+}
+function renderArchive() {
+  archiveList.innerHTML = '';
+  archiveCount.textContent = archive.length;
+  archive.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'archive-item status-' + item.type;
+    const badge = item.type === 'done'
+      ? '<span class="archive-badge done">✓ Выполнена</span>'
+      : '<span class="archive-badge removed">✕ Удалена</span>';
+    const reasonHtml = item.reason
+      ? '<div class="archive-reason">Причина удаления: ' + escapeHtml(item.reason) + '</div>'
+      : '';
+    el.innerHTML =
+      '<div class="archive-item-title">' + escapeHtml(item.title) + '</div>' +
+      '<div class="archive-item-meta">' +
+        badge +
+        '<span>👤 ' + escapeHtml(item.assignee || 'Не назначен') + '</span>' +
+        (item.deadline ? '<span>📅 до ' + formatDate(item.deadline) + '</span>' : '') +
+        '<span>🕓 ' + formatDateTime(item.archivedAt) + '</span>' +
+      '</div>' +
+      reasonHtml;
+    archiveList.appendChild(el);
+  });
+}
+
+openFormBtn.addEventListener('click', () => {
+  addModal.classList.add('open');
+  setTimeout(() => form.querySelector('input[name="title"]').focus(), 50);
+});
+addCancel.addEventListener('click', () => {
+  addModal.classList.remove('open');
+  form.reset();
+});
+addModal.addEventListener('click', e => {
+  if (e.target === addModal) {
+    addModal.classList.remove('open');
+    form.reset();
+  }
+});
+
+form.addEventListener('submit', e => {
+  e.preventDefault();
+  const fd = new FormData(form);
+  const title = (fd.get('title') || '').toString().trim();
+  if (!title) return;
+  tasks.push({
+    id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+    title: title,
+    assignee: (fd.get('assignee') || '').toString().trim(),
+    priority: fd.get('priority') || 'medium',
+    deadline: fd.get('deadline') || '',
+    status: 'inbox',
+    createdAt: Date.now(),
+    startedAt: null
+  });
+  save(); render();
+  form.reset();
+  addModal.classList.remove('open');
+});
+
+modalCancel.addEventListener('click', () => {
+  deleteModal.classList.remove('open');
+  pendingDeleteId = null;
+});
+deleteModal.addEventListener('click', e => {
+  if (e.target === deleteModal) {
+    deleteModal.classList.remove('open');
+    pendingDeleteId = null;
+  }
+});
+modalConfirm.addEventListener('click', () => {
+  if (!pendingDeleteId) return;
+  const task = tasks.find(t => t.id === pendingDeleteId);
+  if (task) {
+    moveToArchive(task, 'removed', deleteReason.value.trim());
+    tasks = tasks.filter(t => t.id !== pendingDeleteId);
+  }
+  deleteModal.classList.remove('open');
+  pendingDeleteId = null;
+  save(); render(); renderArchive();
+});
+
+Object.entries(lists).forEach(([status, list]) => {
+  list.addEventListener('dragover', e => {
+    e.preventDefault();
+    list.classList.add('drag-over');
+  });
+  list.addEventListener('dragleave', () => list.classList.remove('drag-over'));
+  list.addEventListener('drop', e => {
+    e.preventDefault();
+    list.classList.remove('drag-over');
+    const id = e.dataTransfer.getData('text/plain');
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      const prevStatus = task.status;
+      task.status = status;
+      if (status === 'in-progress' && !task.startedAt) task.startedAt = Date.now();
+      if (status === 'done' && prevStatus !== 'done') {
+        moveToArchive(task, 'done', '');
+        tasks = tasks.filter(t => t.id !== task.id);
+      }
+      save(); render(); renderArchive();
+    }
+  });
+});
+
+archiveToggle.addEventListener('click', () => {
+  archiveEl.classList.toggle('open');
+});
+
+function escapeHtml(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+function initials(name) {
+  return String(name || '?').trim().split(/\s+/).slice(0, 2)
+    .map(w => w[0] ? w[0].toUpperCase() : '').join('') || '?';
+}
+function formatDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+function formatDateTime(ts) {
+  const d = new Date(Number(ts) || 0);
+  if (isNaN(d)) return '';
+  return d.toLocaleString('ru-RU', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+render();
+renderArchive();
+
+setInterval(() => {
+  const anyOverdue = tasks.some(t => isOverdue(t));
+  const anyCurrentlyRed = document.querySelector('.card.overdue');
+  if (anyOverdue || anyCurrentlyRed) render();
+}, 30000);
+</script>
+</body>
+</html>
